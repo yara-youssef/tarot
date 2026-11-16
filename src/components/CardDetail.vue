@@ -10,6 +10,7 @@ const reversed = ref(false)
 const idx = computed(() => DECK.findIndex((c) => c.id === card.value.id))
 const go = (d: number) => openCard(DECK[(idx.value + d + DECK.length) % DECK.length]!.id)
 const suitInfo = computed(() => (card.value.suit === 'major' ? null : SUITS[card.value.suit]))
+const highlights = computed(() => store.highlights.filter((h) => h.cardId === card.value.id))
 const note = computed({
   get: () => store.notes[card.value.id] ?? '',
   set: (v: string) => { store.notes[card.value.id] = v },
@@ -58,7 +59,14 @@ const note = computed({
 
         <div>
           <label class="label" :for="'note-' + card.id">My own meaning</label>
-          <textarea :id="'note-' + card.id" v-model="note" placeholder="What does this card say to you? What do you see, feel or remember when you look at it? (Saved automatically)" />
+          <textarea :id="'note-' + card.id" v-model="note" placeholder="What does this card say to you? What do you see, feel or remember when you look at it? Passages you add from the guide appear here too. (Saved automatically)" />
+        </div>
+
+        <div v-if="highlights.length">
+          <span class="label">My highlights from the guide</span>
+          <button v-for="h in highlights" :key="h.id" class="hl small" :style="{ borderColor: h.color }" @click="openGuide(h.page)">
+            “{{ h.text }}” <span class="muted">p. {{ h.page }}</span>
+          </button>
         </div>
 
         <div class="row">
@@ -80,6 +88,8 @@ const note = computed({
 .kw { transition: opacity .3s; }
 .kw.dim { opacity: .5; }
 .kw p { margin-top: 4px; }
+.hl { display: block; width: 100%; text-align: left; background: var(--surface); color: inherit; border: 0; border-left: 4px solid; border-radius: 4px; padding: 6px 10px; margin-bottom: 6px; }
+.hl:hover { background: var(--surface-2); }
 .facts { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; }
 @media (max-width: 640px) {
   .detail { grid-template-columns: 1fr; }

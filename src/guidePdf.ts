@@ -57,3 +57,5 @@ export async function getGuide(): Promise<PDFDocumentProxy | null> {
 
 /** The PDF file has a cover page before printed page 1. */
 export const PDF_OFFSET = 1
+
+export const TextLayer = pdfjs.TextLayer

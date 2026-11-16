@@ -1,11 +1,20 @@
+<script lang="ts">
+// Shared across all modals: which one is on top (for Escape) and whether the page should stay locked.
+const stack: symbol[] = []
+</script>
+
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 const emit = defineEmits<{ close: [] }>()
-const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') emit('close') }
-onMounted(() => { window.addEventListener('keydown', onKey); document.body.style.overflow = 'hidden' })
-onUnmounted(() => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' })
+const me = Symbol('modal')
+const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && stack[stack.length - 1] === me) emit('close') }
+onMounted(() => { window.addEventListener('keydown', onKey); stack.push(me); document.body.style.overflow = 'hidden' })
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKey)
+  stack.splice(stack.indexOf(me), 1)
+  if (!stack.length) document.body.style.overflow = ''
+})
 </script>
-
 <template>
   <div class="backdrop" @click.self="emit('close')">
     <div class="sheet" role="dialog" aria-modal="true">

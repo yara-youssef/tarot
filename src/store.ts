@@ -12,19 +12,30 @@ export interface Reading {
   reflection: string // added later, when looking back
 }
 
+export interface Highlight {
+  id: string
+  page: number // printed page in the guide
+  cardId: string | null // the card this passage is about
+  text: string
+  color: string
+  rects: [number, number, number, number][] // x, y, w, h as fractions of the page
+  date: string
+}
+
 interface State {
   learned: string[] // card ids marked as learned
   notes: Record<string, string> // personal meaning per card
   boxes: Record<string, number> // flashcard Leitner box per card (0 = new … 4 = mastered)
   quiz: { answered: number; correct: number }
   readings: Reading[]
+  highlights: Highlight[]
   useReversals: boolean
   reversalMethod: string
 }
 
 const KEY = 'tarot-study-v1'
 const defaults: State = {
-  learned: [], notes: {}, boxes: {}, quiz: { answered: 0, correct: 0 }, readings: [],
+  learned: [], notes: {}, boxes: {}, quiz: { answered: 0, correct: 0 }, readings: [], highlights: [],
   useReversals: false, reversalMethod: 'internal',
 }
 
@@ -47,6 +58,13 @@ export function toggleLearned(id: string) {
   const i = store.learned.indexOf(id)
   if (i >= 0) store.learned.splice(i, 1)
   else store.learned.push(id)
+}
+
+/** Append a passage from the guide to a card's personal notes. */
+export function addQuoteToNotes(cardId: string, text: string, page: number) {
+  const quote = `“${text.trim()}” (guide p. ${page})`
+  const prev = store.notes[cardId]?.trim()
+  store.notes[cardId] = prev ? `${prev}\n\n${quote}` : quote
 }
 
 export function exportData(): string { return JSON.stringify(store, null, 2) }

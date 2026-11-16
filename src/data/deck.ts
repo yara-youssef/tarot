@@ -178,3 +178,14 @@ export function questionWarning(q: string): string | null {
     return '"Should I…" asks the cards to decide for you. Try "What do I need to consider about…" or "What might happen if I…" instead: you keep the choice.'
   return null
 }
+
+/** The card whose chapter in the guide contains this printed page, if any. */
+const BY_PAGE = [...DECK].sort((a, b) => a.page - b.page)
+export function cardForPage(page: number): Card | null {
+  if (page < BY_PAGE[0]!.page || page >= 421) return null // intro pages and bonus chapters
+  // Minor Arcana and suit introductions
+  if ([[125, 128], [202, 203], [275, 276], [348, 349]].some(([a, b]) => page >= a! && page <= b!)) return null
+  let found: Card | null = null
+  for (const c of BY_PAGE) if (c.page <= page) found = c
+  return found
+}
