@@ -1,42 +1,26 @@
-# tarot
+# Tarot Study
 
-This template should help get you started developing with Vue 3 in Vite.
+A web app for learning to read tarot alongside *The Ultimate Guide to Tarot Card Meanings* (Brigit Esselmont), the PDF in `guide/`.
 
-## Recommended IDE Setup
+**Live site:** https://yara-youssef.github.io/tarot/
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## What's inside
 
-## Recommended Browser Setup
+- **Learn**: a learning path (Major Arcana, then each suit) with progress tracking, plus summaries of the guide's bonus chapters: numerology, reading reversed cards, and reading tarot for yourself.
+- **Cards**: all 78 cards with the guide's upright and reversed keywords, short study notes, imagery to look for, numerology, a reflection question and a "My own meaning" notebook for each card.
+- **Read in my guide**: open your copy of the guide PDF once and every card links straight to its chapter. The PDF stays in your browser and is never uploaded or published.
+- **Practice**: intuition-first flashcards (you write your impression before the meaning is revealed; harder cards come back more often) and a keyword quiz.
+- **Reading**: a guided self-reading based on the guide's steps: breathe, ask an open question (with tips when you ask yes/no or "should I" questions), pick a spread, draw, interpret each card intuitively first, then read the whole story with pattern hints (Majors, suits, repeated numbers, reversals).
+- **Journal**: saved readings with a "looking back" reflection, plus backup/restore.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+Progress, notes and journal are stored in your browser (localStorage).
 
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## Development
 
 ```sh
 npm install
+npm run dev      # local dev server
+npm run build    # type-check and build to dist/
 ```
 
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
-```
+Pushing to `main` deploys to GitHub Pages via `.github/workflows/deploy.yml`.

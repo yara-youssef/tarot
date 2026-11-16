@@ -6,6 +6,8 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Relative base so the site works on GitHub Pages under /tarot/
+  base: './',
   plugins: [
     vue(),
     vueDevTools(),
