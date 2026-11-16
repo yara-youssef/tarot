@@ -1,6 +1,6 @@
 # Tarot Study
 
-A web app for learning to read tarot alongside *The Ultimate Guide to Tarot Card Meanings* (Brigit Esselmont), the PDF in `guide/`.
+A web app for learning to read tarot alongside *The Ultimate Guide to Tarot Card Meanings* (Brigit Esselmont). Use your own copy of the PDF with the "Read in my guide" feature.
 
 **Live site:** https://yara-youssef.github.io/tarot/
 
