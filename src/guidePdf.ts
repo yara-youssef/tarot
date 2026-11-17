@@ -29,7 +29,7 @@ export async function saveGuide(file: Blob) {
   doc = null
 }
 
-async function loadBlob(): Promise<Blob | null> {
+export async function loadBlob(): Promise<Blob | null> {
   try {
     const d = await db()
     return await new Promise((res, rej) => {

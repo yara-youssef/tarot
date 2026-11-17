@@ -100,3 +100,56 @@ export async function update(token: string, id: string, doc: SyncDoc): Promise<v
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(doc),
   })
 }
+
+// ───── Larger files (the guide PDF) ─────
+
+export interface DriveFile { id: string; size: number }
+
+export async function findByName(token: string, name: string): Promise<DriveFile | null> {
+  const q = encodeURIComponent(`name = '${name.replace(/'/g, "\\'")}' and trashed = false`)
+  const r = await call(token, `${API}/files?q=${q}&spaces=drive&orderBy=modifiedTime desc&fields=files(id,size)`)
+  const f = (await r.json()).files?.[0]
+  return f ? { id: f.id, size: Number(f.size) || 0 } : null
+}
+
+/** Download a file, reporting progress from 0 to 1. */
+export async function downloadBlob(token: string, file: DriveFile, onProgress: (p: number) => void): Promise<Blob> {
+  const r = await call(token, `${API}/files/${file.id}?alt=media`)
+  const total = file.size || Number(r.headers.get('Content-Length')) || 0
+  if (!r.body || !total) return r.blob()
+  const reader = r.body.getReader()
+  const chunks: Uint8Array[] = []
+  let got = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    chunks.push(value)
+    got += value.length
+    onProgress(Math.min(1, got / total))
+  }
+  return new Blob(chunks as BlobPart[], { type: 'application/pdf' })
+}
+
+/** Upload a large file with a resumable upload session, reporting progress from 0 to 1. */
+export async function uploadBlob(token: string, blob: Blob, name: string, description: string, onProgress: (p: number) => void): Promise<string> {
+  const start = await call(token, `${UPLOAD}/files?uploadType=resumable&fields=id`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Type': blob.type || 'application/pdf', 'X-Upload-Content-Length': String(blob.size) },
+    body: JSON.stringify({ name, mimeType: blob.type || 'application/pdf', description }),
+  })
+  const session = start.headers.get('Location')
+  if (!session) throw new Error('Google Drive did not accept the upload.')
+  // XMLHttpRequest, because fetch can't report upload progress
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', session)
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total) }
+    xhr.onload = () => {
+      if (xhr.status === 401) return reject(new AuthError('Google sign-in expired.'))
+      if (xhr.status < 200 || xhr.status >= 300) return reject(new Error(`Upload failed (${xhr.status}).`))
+      try { resolve(JSON.parse(xhr.responseText).id) } catch { reject(new Error('Upload failed.')) }
+    }
+    xhr.onerror = () => reject(new Error('Upload failed. Check your connection.'))
+    xhr.send(blob)
+  })
+}

@@ -4,6 +4,8 @@ import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import { CARD_BY_ID, DECK, cardForPage } from '@/data/deck'
 import { addQuoteToNotes, openCard, store, ui, type Highlight } from '@/store'
 import Modal from './Modal.vue'
+import { sync } from '@/sync'
+import { checkGuide, downloadGuide, guideCloud, uploadGuide } from '@/sync/guide'
 
 const doc = shallowRef<PDFDocumentProxy | null>(null) // pdf.js objects must not be made reactive
 const status = ref<'loading' | 'missing' | 'ready' | 'error'>('loading')
@@ -38,6 +40,7 @@ async function init() {
     doc.value = await lib.getGuide()
     status.value = doc.value ? 'ready' : 'missing'
     if (doc.value) { await nextTick(); render() }
+    if (sync.enabled) cloudOnOpen()
   } catch (e) {
     console.error(e)
     status.value = 'error'
@@ -137,6 +140,27 @@ async function pick(e: Event) {
   await lib.saveGuide(f)
   await init()
 }
+
+// ───── Google Drive copy of the guide ─────
+const pct = computed(() => Math.round(guideCloud.progress * 100))
+async function cloudOnOpen() {
+  if (guideCloud.state === 'unknown' || guideCloud.state === 'error') await checkGuide(false)
+  if (status.value === 'missing' && guideCloud.state === 'in-drive') await fromDrive(false)
+  // This device has the PDF but Drive doesn't yet: save it there for the other devices
+  else if (status.value === 'ready' && guideCloud.state === 'not-in-drive') await toDrive(false)
+}
+async function fromDrive(interactive: boolean) {
+  const blob = await downloadGuide(interactive)
+  if (!blob || !lib) return
+  await lib.saveGuide(blob)
+  await init()
+}
+async function toDrive(interactive: boolean) {
+  const blob = await lib?.loadBlob()
+  if (!blob) return
+  if (interactive && guideCloud.state !== 'in-drive' && (await checkGuide(true))) return // already there
+  await uploadGuide(blob, interactive)
+}
 async function forget() {
   await lib?.forgetGuide()
   doc.value = null
@@ -154,9 +178,24 @@ onMounted(init)
     <div v-else-if="status === 'missing' || status === 'error'" class="stack">
       <p>
         To read the full chapter for any card, open your copy of
-        <em>The Ultimate Guide to Tarot Card Meanings</em> (PDF) once. It is stored only in this browser and never uploaded.
-        After that, every "Read in my guide" button jumps straight to the right page.
+        <em>The Ultimate Guide to Tarot Card Meanings</em> (PDF) once. It's kept in this browser, and in your own Google Drive
+        if sync is on; it's never published. After that, every "Read in my guide" button jumps straight to the right page.
       </p>
+      <div v-if="sync.enabled" class="cloud-box small">
+        <template v-if="guideCloud.state === 'downloading'">
+          <span>☁ Getting your guide from Google Drive… {{ pct }}%</span>
+          <div class="progress"><span :style="{ width: pct + '%' }" /></div>
+        </template>
+        <span v-else-if="guideCloud.state === 'checking'">☁ Looking for your guide in Google Drive…</span>
+        <template v-else-if="guideCloud.state === 'not-in-drive'">
+          ☁ Your guide isn't in your Google Drive yet. Choose the PDF below; it will be saved to your Drive so your other devices get it automatically.
+        </template>
+        <template v-else>
+          <button class="btn primary" @click="fromDrive(true)">☁ Get my guide from Google Drive</button>
+          <span v-if="guideCloud.state === 'error'" class="bad">{{ guideCloud.error }}</span>
+        </template>
+      </div>
+      <p v-else-if="sync.configured" class="small muted">Tip: turn on Google Drive sync (Journal tab) and the PDF will be saved to your Drive, so your other devices get it automatically.</p>
       <p v-if="status === 'error'" style="color: var(--bad)">That file could not be opened. Please choose the PDF again.</p>
       <label class="btn primary pick">Choose the guide PDF…<input type="file" accept="application/pdf" hidden @change="pick" /></label>
       <p class="small muted">Without the PDF you can still use every other part of the app. The card is on page {{ ui.guidePage }} of the guide.</p>
@@ -168,6 +207,19 @@ onMounted(init)
         <span class="muted small">Page <input v-model.number="page" type="number" min="1" class="pg" /> of {{ doc!.numPages - 1 }}</span>
         <button class="btn" @click="page++">Page →</button>
         <button class="btn ghost small forget" @click="forget">Remove PDF from this browser</button>
+      </div>
+      <div v-if="sync.enabled" class="cloud-line small">
+        <template v-if="guideCloud.state === 'uploading'">
+          <span>☁ Saving your guide to Google Drive… {{ pct }}%</span>
+          <div class="progress"><span :style="{ width: pct + '%' }" /></div>
+        </template>
+        <span v-else-if="guideCloud.state === 'in-drive'" class="good">☁ Saved in your Google Drive. Your other devices will get it automatically.</span>
+        <span v-else-if="guideCloud.state === 'checking'" class="muted">☁ Checking Google Drive…</span>
+        <template v-else>
+          <button class="btn small" @click="toDrive(true)">☁ Save to Google Drive</button>
+          <span v-if="guideCloud.state === 'error'" class="bad">{{ guideCloud.error }}</span>
+          <span v-else class="muted">so your other devices get it too</span>
+        </template>
       </div>
 
       <!-- Tools: always visible so it works on phones too -->
@@ -227,6 +279,11 @@ onMounted(init)
 .bar { justify-content: center; }
 .pg { width: 70px; padding: .25em .4em; display: inline-block; text-align: center; }
 .forget { margin-left: auto; }
+.cloud-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.cloud-box .progress, .cloud-line .progress { width: 100%; max-width: 360px; }
+.cloud-line { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: center; text-align: center; }
+.good { color: var(--good); }
+.bad { color: var(--bad); }
 .tools { position: sticky; top: -24px; z-index: 5; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .tools.active { border-color: var(--accent); box-shadow: var(--shadow); }
 .hint { margin: 0; }

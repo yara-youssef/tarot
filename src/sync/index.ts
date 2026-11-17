@@ -123,6 +123,21 @@ async function run(interactive: boolean, retried = false): Promise<void> {
   }
 }
 
+/**
+ * A Google access token for other Drive features (e.g. the guide PDF).
+ * Returns null if sync is off, or if signing in again would need a tap and `interactive` is false.
+ */
+export async function getAccessToken(interactive: boolean): Promise<string | null> {
+  if (!sync.enabled || !sync.configured) return null
+  if (!tokenValid()) {
+    if (!interactive) return null
+    await signIn(false)
+  }
+  return meta.token!.access_token
+}
+/** Forget the current token after Google rejected it. */
+export function dropToken() { meta.token = null; saveMeta(); sync.status = 'needs-signin' }
+
 /** Turn sync on (from a tap): sign in with Google, then do the first sync. */
 export async function connect() {
   sync.error = ''
