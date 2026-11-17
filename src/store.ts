@@ -23,7 +23,7 @@ export interface Highlight {
   date: string
 }
 
-interface State {
+export interface State {
   learned: string[] // card ids marked as learned
   notes: Record<string, string> // personal meaning per card
   boxes: Record<string, number> // flashcard Leitner box per card (0 = new … 4 = mastered)
@@ -67,6 +67,13 @@ export function addQuoteToNotes(cardId: string, text: string, page: number) {
   const quote = `“${text.trim()}” (guide p. ${page})`
   const prev = store.notes[cardId]?.trim()
   store.notes[cardId] = prev ? `${prev}\n\n${quote}` : quote
+}
+
+/** Replace all app data at once (used when syncing from another device). */
+export function replaceState(next: State) {
+  for (const k of Object.keys(next) as (keyof State)[]) {
+    if (JSON.stringify(store[k]) !== JSON.stringify(next[k])) (store as Record<keyof State, unknown>)[k] = next[k]
+  }
 }
 
 export function exportData(): string { return JSON.stringify(store, null, 2) }

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { CARD_BY_ID, REVERSAL_METHODS, SPREADS } from '@/data/deck'
 import { exportData, importData, openCard, store } from '@/store'
 import TarotCard from '@/components/TarotCard.vue'
+import SyncPanel from '@/components/SyncPanel.vue'
 
 const open = ref<string | null>(store.readings[0]?.id ?? null)
 const fmt = (iso: string) => new Date(iso).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
@@ -72,9 +73,11 @@ async function upload(e: Event) {
       </div>
     </article>
 
+    <SyncPanel />
+
     <section class="panel stack">
-      <h3>Backup</h3>
-      <p class="small muted">Your progress, notes and journal live in this browser. Download a backup to keep them safe or move them to another device.</p>
+      <h3>Backup file</h3>
+      <p class="small muted">You can also download everything as a file, to keep a copy or move it by hand.</p>
       <div class="row">
         <button class="btn" @click="download">Download backup</button>
         <label class="btn">Restore from backup<input type="file" accept="application/json" hidden @change="upload" /></label>

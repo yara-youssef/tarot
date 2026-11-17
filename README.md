@@ -12,8 +12,19 @@ A web app for learning to read tarot alongside *The Ultimate Guide to Tarot Card
 - **Practice**: intuition-first flashcards (you write your impression before the meaning is revealed; harder cards come back more often) and a keyword quiz.
 - **Reading**: a guided self-reading based on the guide's steps: breathe, ask an open question (with tips when you ask yes/no or "should I" questions), pick a spread, draw in the app or enter the cards you drew from your own physical deck (with upright/reversed), interpret each card intuitively first, then read the whole story with pattern hints (Majors, suits, repeated numbers, reversals).
 - **Journal**: saved readings with a "looking back" reflection, plus backup/restore.
+- **Sync with Google Drive** (Journal tab): keeps progress, notes, highlights and journal the same on all your devices, using one file (`Tarot Study sync.json`) in your Drive. Changes are merged per item, so edits on different devices don't overwrite each other.
 
-Progress, notes and journal are stored in your browser (localStorage).
+Data is stored in your browser (localStorage), and in your Google Drive if sync is on.
+
+## Setting up Google Drive sync
+
+Sync needs a Google OAuth client ID (free, not secret):
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project.
+2. APIs & Services → Library → enable **Google Drive API**.
+3. APIs & Services → OAuth consent screen → **External**; add your Google account as a test user.
+4. APIs & Services → Credentials → Create credentials → **OAuth client ID** → *Web application*; add `https://yara-youssef.github.io` (and `http://localhost:5173` for development) as authorised JavaScript origins.
+5. Put the client ID in `src/config.ts` (or set `VITE_GOOGLE_CLIENT_ID`).
 
 ## Development
 

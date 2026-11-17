@@ -8,6 +8,7 @@ import ReadingView from './views/ReadingView.vue'
 import JournalView from './views/JournalView.vue'
 import CardDetail from './components/CardDetail.vue'
 import GuideViewer from './components/GuideViewer.vue'
+import SyncBadge from './components/SyncBadge.vue'
 
 const TABS = [
   { id: 'learn', label: 'Learn', icon: '☾' },
@@ -33,7 +34,10 @@ const view = computed(() => ({ learn: LearnView, cards: CardsView, practice: Pra
 <template>
   <header class="top">
     <div class="wrap top-inner">
-      <a href="#/learn" class="brand"><span class="star">✦</span> Tarot Study</a>
+      <div class="left">
+        <a href="#/learn" class="brand"><span class="star">✦</span> Tarot Study</a>
+        <SyncBadge />
+      </div>
       <nav>
         <a v-for="t in TABS" :key="t.id" :href="`#/${t.id}`" :class="{ on: tab === t.id }">
           <span class="ico" aria-hidden="true">{{ t.icon }}</span><span>{{ t.label }}</span>
@@ -48,7 +52,7 @@ const view = computed(() => ({ learn: LearnView, cards: CardsView, practice: Pra
 
   <footer class="wrap foot small muted">
     Built for studying alongside <em>The Ultimate Guide to Tarot Card Meanings</em> by Brigit Esselmont.
-    Keywords and page numbers come from the guide; other notes are short study summaries. Your progress is saved in this browser only.
+    Keywords and page numbers come from the guide; other notes are short study summaries. Your progress is saved in this browser, and in your Google Drive if you turn on sync (Journal tab).
   </footer>
 
   <CardDetail v-if="ui.cardId" :key="ui.cardId" />
@@ -58,6 +62,7 @@ const view = computed(() => ({ learn: LearnView, cards: CardsView, practice: Pra
 <style scoped>
 .top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
 .top-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; }
+.left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .brand { font: 700 1.45rem var(--serif); color: var(--text); text-decoration: none; white-space: nowrap; }
 .star { color: var(--gold); }
 nav { display: flex; gap: 4px; }
