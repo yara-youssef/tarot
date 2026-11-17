@@ -8,6 +8,7 @@ export interface Reading {
   question: string
   reversalMethod: string | null
   cards: DrawnCard[]
+  physical?: boolean // drawn from a physical deck
   story: string
   reflection: string // added later, when looking back
 }
@@ -30,13 +31,14 @@ interface State {
   readings: Reading[]
   highlights: Highlight[]
   useReversals: boolean
+  drawMode: 'app' | 'deck' // draw on screen, or enter cards from your own physical deck
   reversalMethod: string
 }
 
 const KEY = 'tarot-study-v1'
 const defaults: State = {
   learned: [], notes: {}, boxes: {}, quiz: { answered: 0, correct: 0 }, readings: [], highlights: [],
-  useReversals: false, reversalMethod: 'internal',
+  useReversals: false, reversalMethod: 'internal', drawMode: 'app',
 }
 
 function load(): State {

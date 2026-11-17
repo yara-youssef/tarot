@@ -46,7 +46,7 @@ async function upload(e: Event) {
     <article v-for="r in store.readings" :key="r.id" class="panel entry">
       <button class="head" @click="open = open === r.id ? null : r.id">
         <div>
-          <div class="eyebrow">{{ fmt(r.date) }} · {{ spreadName(r.spreadId) }}</div>
+          <div class="eyebrow">{{ fmt(r.date) }} · {{ spreadName(r.spreadId) }}{{ r.physical ? ' · my own deck' : '' }}</div>
           <h3>{{ r.question || 'Untitled reading' }}</h3>
         </div>
         <div class="minis">

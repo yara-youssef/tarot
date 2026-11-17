@@ -5,6 +5,7 @@ import {
 } from '@/data/deck'
 import { openCard, shuffle, store, type DrawnCard } from '@/store'
 import TarotCard from '@/components/TarotCard.vue'
+import PhysicalDraw, { type Slot } from '@/components/PhysicalDraw.vue'
 
 const step = ref(0)
 const STEPS = ['Clear your mind', 'Ask', 'Choose a spread', 'Draw', 'Read each card', 'The story']
@@ -43,6 +44,12 @@ function doShuffle() {
   fan.value = Array.from({ length: 13 }, (_, i) => i)
   drawn.value = []
   setTimeout(() => (shuffling.value = false), 900)
+}
+// Cards entered from your own deck, one slot per position
+const slots = ref<(Slot | null)[]>([])
+const physical = computed(() => store.drawMode === 'deck')
+function physicalToDrawn() {
+  drawn.value = slots.value.map((s, i) => ({ id: s!.id, reversed: store.useReversals && s!.reversed, position: spread.value.positions[i]!, intuition: '' }))
 }
 function pick(i: number) {
   if (drawn.value.length >= spread.value.positions.length) return
@@ -92,10 +99,15 @@ const analysis = computed(() => {
 })
 
 function next() {
-  if (step.value === 2) doShuffle()
+  if (step.value === 2) {
+    doShuffle()
+    slots.value = spread.value.positions.map(() => null)
+  }
   if (step.value === 3) {
+    if (physical.value) physicalToDrawn()
     cur.value = 0
-    flipped.value = drawn.value.map(() => false)
+    // Physical cards are already face up on your table
+    flipped.value = drawn.value.map(() => physical.value)
     revealed.value = drawn.value.map(() => false)
   }
   step.value++
@@ -105,15 +117,16 @@ function save() {
   store.readings.unshift({
     id: Date.now().toString(36), date: new Date().toISOString(), spreadId: spreadId.value,
     question: question.value.trim(), reversalMethod: store.useReversals ? store.reversalMethod : null,
-    cards: drawn.value.map((d) => ({ ...d })), story: story.value, reflection: '',
+    cards: drawn.value.map((d) => ({ ...d })), physical: physical.value, story: story.value, reflection: '',
   })
   saved.value = true
 }
 function restart() {
-  step.value = 0; breath.value = 0; question.value = ''; drawn.value = []; story.value = ''; saved.value = false
+  step.value = 0; breath.value = 0; question.value = ''; drawn.value = []; slots.value = []; story.value = ''; saved.value = false
 }
 const canNext = computed(() => [
-  true, question.value.trim().length > 0, true, drawn.value.length === spread.value.positions.length,
+  true, question.value.trim().length > 0, true,
+  physical.value ? slots.value.length === spread.value.positions.length && slots.value.every(Boolean) : drawn.value.length === spread.value.positions.length,
   revealed.value.every(Boolean), true,
 ][step.value])
 </script>
@@ -177,22 +190,41 @@ const canNext = computed(() => [
 
     <!-- 3 Draw -->
     <section v-if="step === 3" class="stack">
-      <div class="panel">
-        <p class="center"><em>“{{ question }}”</em></p>
-        <p class="center muted small">Focus on your question and pick {{ spread.positions.length }} card{{ spread.positions.length > 1 ? 's' : '' }}. ({{ drawn.length }}/{{ spread.positions.length }})</p>
-        <div class="fan" :class="{ shuffling }">
-          <button v-for="(i, k) in fan" :key="i" class="fan-card" :style="{ '--k': k, '--n': fan.length }" :aria-label="`Pick card ${k + 1}`" @click="pick(i)">
-            <TarotCard :id="deck[i]!.id" face-down />
-          </button>
-        </div>
+      <div class="chips-toggle center" role="radiogroup" aria-label="How are you drawing?">
+        <button :class="{ on: !physical }" role="radio" :aria-checked="!physical" @click="store.drawMode = 'app'">✦ Draw in the app</button>
+        <button :class="{ on: physical }" role="radio" :aria-checked="physical" @click="store.drawMode = 'deck'">🂠 I'm using my own deck</button>
       </div>
-      <div class="layout">
-        <div v-for="(p, i) in spread.positions" :key="p" class="slot">
-          <div class="slot-card"><TarotCard v-if="drawn[i]" :id="drawn[i]!.id" face-down /></div>
-          <span class="small muted">{{ p }}</span>
+
+      <template v-if="physical">
+        <div class="panel">
+          <p class="center"><em>“{{ question }}”</em></p>
+          <p class="center muted small">
+            Shuffle your deck while focusing on your question, then lay out {{ spread.positions.length }} card{{ spread.positions.length > 1 ? 's' : '' }}
+            left to right: {{ spread.positions.join(' · ') }}. Then enter each card below.
+          </p>
         </div>
-      </div>
-      <div class="row"><button class="btn" @click="doShuffle">Reshuffle</button><button class="btn primary" :disabled="!canNext" @click="next">Turn the cards over</button></div>
+        <PhysicalDraw v-model="slots" :positions="spread.positions" :use-reversals="store.useReversals" />
+        <div class="row"><button class="btn" @click="step--">Back</button><button class="btn primary" :disabled="!canNext" @click="next">Read the cards</button></div>
+      </template>
+
+      <template v-else>
+        <div class="panel">
+          <p class="center"><em>“{{ question }}”</em></p>
+          <p class="center muted small">Focus on your question and pick {{ spread.positions.length }} card{{ spread.positions.length > 1 ? 's' : '' }}. ({{ drawn.length }}/{{ spread.positions.length }})</p>
+          <div class="fan" :class="{ shuffling }">
+            <button v-for="(i, k) in fan" :key="i" class="fan-card" :style="{ '--k': k, '--n': fan.length }" :aria-label="`Pick card ${k + 1}`" @click="pick(i)">
+              <TarotCard :id="deck[i]!.id" face-down />
+            </button>
+          </div>
+        </div>
+        <div class="layout">
+          <div v-for="(p, i) in spread.positions" :key="p" class="slot">
+            <div class="slot-card"><TarotCard v-if="drawn[i]" :id="drawn[i]!.id" face-down /></div>
+            <span class="small muted">{{ p }}</span>
+          </div>
+        </div>
+        <div class="row"><button class="btn" @click="doShuffle">Reshuffle</button><button class="btn primary" :disabled="!canNext" @click="next">Turn the cards over</button></div>
+      </template>
     </section>
 
     <!-- 4 Interpret -->
@@ -212,7 +244,7 @@ const canNext = computed(() => [
         <template v-else>
           <h2>{{ CARD_BY_ID[d.id]!.name }}<span v-if="d.reversed" class="muted"> (reversed)</span></h2>
           <p class="small muted">
-            Intuition first: look at the card in your deck (or picture it). What stands out? What do you feel? What story does it tell in the position of <b>{{ d.position }}</b>?
+            Intuition first: look at the card on your table (or picture it). What stands out? What do you feel? What story does it tell in the position of <b>{{ d.position }}</b>?
           </p>
           <textarea v-model="d.intuition" placeholder="What I see and feel…" />
           <button v-if="!revealed[i]" class="btn primary" @click="revealed[i] = true">Now show me the meaning</button>
